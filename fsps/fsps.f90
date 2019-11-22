@@ -297,6 +297,23 @@ contains
 
   end subroutine
 
+  subroutine get_indices(ns,n_age,n_indx,indices)
+
+    ! Get the spectral indices for the computed CSP at all ages.
+
+    implicit none
+    integer :: i
+    integer, intent(in) :: ns, n_age, n_indx
+    double precision, dimension(n_age,n_indx), intent(out) :: indices
+    double precision, dimension(ns) :: tspec, lambda
+    call get_lambda(ns,lambda)
+    do i=1,n_age
+      tspec = ocompsp(i)%spec
+      call getindx(lambda,tspec,indices(i,:))
+    enddo
+
+  end subroutine
+
   subroutine interp_ssp(ns,zpos,tpos,spec,mass,lbol)
 
     ! Return the SSPs interpolated to the target metallicity 
@@ -474,6 +491,15 @@ contains
     implicit none
     integer, intent(out) :: nb
     nb = nbands
+
+  end subroutine
+
+  subroutine get_nindx(ni)
+
+    ! Get the number of spectral indices (hard coded in sps_vars).
+    implicit none
+    integer, intent(out) :: ni
+    ni = nindx
 
   end subroutine
 

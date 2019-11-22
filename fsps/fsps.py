@@ -671,6 +671,29 @@ class StellarPopulation(object):
             else:
                 return mags
 
+    def get_indices(self, zmet=None, tage=0.0):
+        """
+        """
+        self.params["tage"] = tage
+        if zmet is not None:
+            self.params["zmet"] = zmet
+
+        if self.params.dirty:
+            self._compute_csp()
+
+        if tage > 0.0:
+            NTFULL = 1
+        else:
+            NTFULL = driver.get_ntfull()
+        NINDX = driver.get_nindx()
+        NSPEC = driver.get_nspec()
+        indices = driver.get_indices(NSPEC, NTFULL, NINDX)
+        if tage > 0.0:
+            return indices[0,:]
+        else:
+            return indices
+
+
     def _ztinterp(self, zpos, tpos, peraa=False):
         """
         Return an SSP spectrum, mass, and luminosity interpolated to a target

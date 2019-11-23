@@ -673,6 +673,21 @@ class StellarPopulation(object):
 
     def get_indices(self, zmet=None, tage=0.0):
         """
+        Return spectral indices for the current CSP
+
+        :param zmet: (default: None)
+            The (integer) index of the metallicity to use. By default, use the
+            current value of ``self.params["zmet"]``.
+
+        :param tage: (default: 0.0)
+            The age of the stellar population. By default, this will compute a
+            grid of ages from :math:`t \approx 0` to the maximum age in the
+            isochrones.
+
+        :returns indices:
+            The index grid. If an age was was provided by the ``tage``
+            parameter then the result is a 1D array with ``NINDX`` values.
+            Otherwise, it is a 2D array with shape ``(NTFULL, NINDX)``.
         """
         self.params["tage"] = tage
         if zmet is not None:

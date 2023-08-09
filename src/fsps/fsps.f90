@@ -1,6 +1,7 @@
 module driver
 
-  use sps_vars; use sps_utils
+  use sps_vars
+  use sps_utils
   implicit none
   save
 
@@ -18,7 +19,7 @@ module driver
   !f2py intent(hide) has_ssp_age
   integer, dimension(nz,nt) :: has_ssp_age=0
 
-  
+
 contains
 
   subroutine setup(compute_vega_mags0, vactoair_flag0)
@@ -28,7 +29,7 @@ contains
     implicit none
 
     integer, intent(in) :: compute_vega_mags0, vactoair_flag0
-         
+
 
     compute_vega_mags = compute_vega_mags0
     vactoair_flag = vactoair_flag0
@@ -44,18 +45,20 @@ contains
                             imf1,imf2,imf3,vdmc,mdave,dell,&
                             delt,sbss,fbhb,pagb,add_stellar_remnants0,&
                             tpagb_norm_type0,add_agb_dust_model0,agb_dust,&
-                            redgb,agb,masscut,fcstar,evtype,smooth_lsf0)
- 
+                            redgb,agb,masscut,fcstar,evtype,use_wr_spectra0,&
+                            logt_wmb_hot0,add_xrb_emission0,frac_xrb,smooth_lsf0)
+
     ! Set the parameters that affect the SSP computation.
 
     implicit none
 
     integer, intent(in) :: imf_type0,add_stellar_remnants0,tpagb_norm_type0,&
-                           add_agb_dust_model0,smooth_lsf0
+                           add_agb_dust_model0,use_wr_spectra0,add_xrb_emission0,smooth_lsf0
     double precision, intent(in) :: imf_upper_limit0, imf_lower_limit0,&
                                     imf1,imf2,imf3,vdmc,mdave,dell,&
                                     delt,sbss,fbhb,pagb,agb_dust,&
-                                    redgb,agb,masscut,fcstar,evtype
+                                    redgb,agb,masscut,fcstar,evtype,&
+                                    logt_wmb_hot0,frac_xrb
 
     imf_type=imf_type0
     imf_upper_limit=imf_upper_limit0
@@ -63,7 +66,10 @@ contains
     add_stellar_remnants=add_stellar_remnants0
     tpagb_norm_type=tpagb_norm_type0
     add_agb_dust_model=add_agb_dust_model0
+    use_wr_spectra=use_wr_spectra0
+    logt_wmb_hot=logt_wmb_hot0
     smooth_lsf=smooth_lsf0
+    add_xrb_emission=add_xrb_emission0
     pset%imf1=imf1
     pset%imf2=imf2
     pset%imf3=imf3
@@ -74,16 +80,17 @@ contains
     pset%sbss=sbss
     pset%fbhb=fbhb
     pset%pagb=pagb
-    pset%agb_dust=agb_dust 
+    pset%agb_dust=agb_dust
     pset%redgb=redgb
     pset%agb=agb
     pset%masscut=masscut
     pset%fcstar=fcstar
     pset%evtype=evtype
+    pset%frac_xrb=frac_xrb
 
     has_ssp(:) = 0
     has_ssp_age(:,:) = 0
-    
+
   end subroutine
 
   subroutine set_csp_params(smooth_velocity0,redshift_colors0,&
@@ -91,7 +98,7 @@ contains
                             dust_type0,add_dust_emission0,add_neb_emission0,&
                             add_neb_continuum0,cloudy_dust0,add_igm_absorption0,&
                             zmet,sfh,wgp1,wgp2,wgp3,tau,&
-                            const,tage,fburst,tburst,dust1,dust2,&
+                            const,tage,fburst,tburst,dust1,dust2,dust3,&
                             logzsol,zred,pmetals,dust_clumps,frac_nodust,&
                             dust_index,dust_tesc,frac_obrun,uvb,mwr,&
                             dust1_index,sf_start,sf_trunc,sf_slope,&
@@ -102,14 +109,14 @@ contains
     ! Set all the parameters that don't affect the SSP computation.
 
     implicit none
-    
+
     integer, intent(in) :: smooth_velocity0,redshift_colors0,&
                            compute_light_ages0,nebemlineinspec0,&
                            dust_type0,add_dust_emission0,add_neb_emission0,&
                            add_neb_continuum0,cloudy_dust0,add_igm_absorption0,&
                            zmet,sfh,wgp1,wgp2,wgp3
     double precision, intent(in) :: tau,&
-                            const,tage,fburst,tburst,dust1,dust2,&
+                            const,tage,fburst,tburst,dust1,dust2,dust3,&
                             logzsol,zred,pmetals,dust_clumps,frac_nodust,&
                             dust_index,dust_tesc,frac_obrun,uvb,mwr,&
                             dust1_index,sf_start,sf_trunc,sf_slope,&
@@ -141,6 +148,7 @@ contains
     pset%tburst=tburst
     pset%dust1=dust1
     pset%dust2=dust2
+    pset%dust3=dust3
     pset%logzsol=logzsol
     pset%zred=zred
     pset%pmetals=pmetals
@@ -166,7 +174,7 @@ contains
     pset%igm_factor=igm_factor
     pset%fagn=fagn
     pset%agn_tau=agn_tau
-    
+
   end subroutine
 
   subroutine ssps
@@ -194,7 +202,7 @@ contains
        has_ssp(zi) = 1
     endif
     has_ssp_age(zi,:) = pset%ssp_gen_age
-    
+
   end subroutine
 
   subroutine compute_zdep(ns,n_age,ztype)
@@ -236,7 +244,7 @@ contains
        call ztinterp(zpos,spec,lbol,mass)
        call compsp(0,1,outfile,mass,lbol,spec,pset,ocompsp)
     endif
-    
+
     if (ztype .eq. 2) then
        zpos = pset%logzsol
        ! Build the SSPs for *every* metallicity if necessary, then
@@ -262,7 +270,7 @@ contains
             spec_ssp_zz,pset,ocompsp)
     endif
 
-    
+
   end subroutine
 
   subroutine get_spec(ns,n_age,spec_out)
@@ -282,7 +290,7 @@ contains
   subroutine get_mags(ns,n_age,n_bands,z_red,mc,mags)
 
     ! Get the photometric magnitudes in all the recognized bands.
-    
+
     implicit none
     integer :: i
     integer, intent(in) :: ns, n_age, n_bands
@@ -316,9 +324,9 @@ contains
 
   subroutine interp_ssp(ns,zpos,tpos,spec,mass,lbol)
 
-    ! Return the SSPs interpolated to the target metallicity 
+    ! Return the SSPs interpolated to the target metallicity
     !(zpos) and target age (tpos)
-    
+
     implicit none
 
     integer, intent(in) :: ns
@@ -329,7 +337,7 @@ contains
     double precision, dimension(1), intent(inout) :: mass,lbol
 
     double precision, dimension(nt) :: time
-    
+
     integer :: zlo,zmet,tlo
 
     zlo = max(min(locate(log10(zlegend/0.0190),zpos),nz-1),1)
@@ -349,24 +357,25 @@ contains
 
     end subroutine
 
-  subroutine smooth_spectrum(ns,wave,spec,sigma_broad,minw,maxw)
-    
+
+    subroutine smooth_spectrum(ns,wave,spec,sigma_broad,minw,maxw)
+
     ! Smooth the spectrum by a gaussian of width sigma_broad
-    
+
     implicit none
     integer, intent(in) :: ns
     double precision, intent(in) :: sigma_broad,minw,maxw
     double precision, dimension(ns), intent(in) :: wave
     double precision, dimension(ns), intent(inout) :: spec
-    
+
     call smoothspec(wave,spec,sigma_broad,minw,maxw)
 
   end subroutine
 
   subroutine stellar_spectrum(ns,mact,logt,lbol,logg,phase,ffco,lmdot,wght,spec_out)
-    
+
     ! Get a stellar spectrum for a given set of parameters
-    
+
     implicit none
     integer :: i
     integer, intent(in) :: ns
@@ -374,9 +383,33 @@ contains
     double precision, dimension(ns), intent(inout) :: spec_out
 
     call getspec(pset,mact,logt,lbol,logg,phase,ffco,lmdot,wght,spec_out)
-    
-  end subroutine 
-  
+
+  end subroutine
+
+  subroutine get_ssp_weights(n_age, n_z, ssp_wghts_out)
+
+    ! Return the weights of each SSP in the CSP
+
+    implicit none
+    integer, intent(in) :: n_age,n_z
+    double precision, dimension(n_age,n_z), intent(inout) :: ssp_wghts_out
+    ssp_wghts_out = weight_ssp
+
+  end subroutine
+
+  subroutine get_csp_components(ns, csp1, csp2)
+
+    ! Return the unattenuated 'young' and 'old' stellar continuua
+
+    implicit none
+    integer, intent(in) :: ns
+    double precision, dimension(ns), intent(inout) :: csp1, csp2
+    csp1 = spec_young
+    csp2 = spec_old
+
+  end subroutine
+
+
   subroutine get_ssp_spec(ns,n_age,n_z,ssp_spec_out,ssp_mass_out,ssp_lbol_out)
 
     ! Return the contents of the ssp spectral array,
@@ -411,7 +444,7 @@ contains
     sfh_tab(2, 1:ntabsfh) = sfr
     sfh_tab(3, 1:ntabsfh) = met
 
-  end subroutine set_sfh_tab
+  end subroutine
 
   subroutine set_ssp_lsf(nsv, sigma, wlo, whi)
 
@@ -425,8 +458,8 @@ contains
     lsfinfo%maxlam = whi
     lsfinfo%lsf = sigma
 
-  end subroutine set_ssp_lsf
-  
+  end subroutine
+
   subroutine get_setup_vars(cvms, vta_flag)
 
     implicit none
@@ -452,6 +485,15 @@ contains
     integer, intent(in) :: n_z
     double precision, dimension(n_z), intent(out) :: z_legend
     z_legend = zlegend
+
+  end subroutine
+
+  subroutine get_zsol(z_sol)
+
+    ! Get the definition of solar metallicity.
+    implicit none
+    double precision, intent(out) :: z_sol
+    z_sol = zsol
 
   end subroutine
 
@@ -508,7 +550,7 @@ contains
     ! Get the number of emission lines (hard coded in sps_vars).
     implicit none
     integer, intent(out) :: nline
-    nline = nemline 
+    nline = nemline
 
   end subroutine
 
@@ -537,19 +579,31 @@ contains
     else
        lambda = spec_lambda
     endif
-    
+
   end subroutine
 
-  subroutine get_libraries(isocname,specname)
+  subroutine get_res(ns,res)
+
+    ! Get the resolution array of the spectral library
+    implicit none
+    integer, intent(in) :: ns
+    double precision, dimension(ns), intent(out) :: res
+    res = spec_res
+
+  end subroutine
+
+  subroutine get_libraries(isocname,specname,dustname)
 
     implicit none
 
     character(4), intent(out) :: isocname
     character(5), intent(out) :: specname
+    character(6), intent(out) :: dustname
     isocname = isoc_type
     specname = spec_type
+    dustname = str_dustem
 
-  end subroutine  
+  end subroutine
 
   subroutine get_isochrone_dimensions(n_age,n_mass)
 
@@ -614,7 +668,7 @@ contains
     implicit none
 
     character(100), intent(in)  :: outfile
-    
+
     call write_isochrone(outfile, pset)
 
   end subroutine

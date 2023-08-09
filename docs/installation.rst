@@ -4,85 +4,133 @@ Installation
 Prerequisites
 -------------
 
-There are only two required dependencies for building this package: `FSPS
-<https://github.com/cconroy20/fsps>`_ (obviously) and `NumPy
-<http://www.numpy.org/>`_.
-First, make sure that you have NumPy installed (using your favorite method)
-and access to the ``f2py`` executable (this should be installed along with
-NumPy).
+Python-FSPS no longer has any compile time prerequisites (besides a working
+Fortran compiler), but (if you're not installing using git, see the "development
+version" section below) it does require a clone of the `FSPS
+<https://github.com/cconroy20/fsps>`_ project for the data files. To get this
+set up, you can clone that repository using:
 
-Then, you need to follow the directions on `the FSPS page
-<https://github.com/cconroy20/fsps>`_ to clone and compile the FSPS
-package. Python-FSPS is built against specific versions of the FSPS Fortran
-API, so it is important that you have a recent version of FSPS through
-git. Currently Python-FSPS is built against FSPS v3.0.
+.. code-block:: bash
 
-These bindings rely on the value of the ``SPS_HOME`` environment
-variable being correctly set and the compiled ``.o`` and ``.mod``
-files being available in the ``${SPS_HOME}/src`` directory.
+    export SPS_HOME="/path/where/you/want/to/download/fsps"
+    git clone https://github.com/cconroy20/fsps.git $SPS_HOME
 
-Installing development version
-------------------------------
+Where, on different systems, you might have to specify the `SPS_HOME`
+environment variable. Python-FSPS requires that variable to be set and it will
+fail to import if it is set incorrectly.
 
-Python-FSPS is being actively developed on GitHub so it's usually best
-to use the most recent development version.
-You can do this by cloning the `python-fsps repository
-<https://github.com/dfm/python-fsps>`_ and building::
-
-    git clone https://github.com/dfm/python-fsps.git
-    cd python-fsps
-    python setup.py install
+Python-FSPS is built against specific versions of the FSPS Fortran API and data
+files, so it is important that you have a recent version of FSPS through git.
+Currently Python-FSPS is built against FSPS v3.2.
 
 Installing stable version
 -------------------------
 
-After you have FSPS and NumPy installed, you _might_ be able to install the
-most recent stable version of python-fsps using pip:
+Python-FSPS is available as a package on `PyPI
+<https://pypi.org/project/fsps/>`_ that you can install using `pip`:
 
 .. code-block:: bash
 
-    pip install fsps
+    python -m pip install fsps
 
-If this does not work, please ``pip uninstall fsps`` and follow the
-instructions above for installing the development version.
+Choosing Stellar Libraries
+---------------------------
 
-Troubleshooting
------------------------
-Here are possible fixes for the most common installation issues:
+FSPS can use several different stellar isochrone and spectral libraries, but
+switching between these libraries in python-FSPS requires (re-)installing
+python-FSPS with specific compiler flags. The available libraries are described
+in more detail in the FSPS documentation, but their names are:
 
-* Version mismatch.  Python-FSPS is built against specific versions of FSPS.
-  This can cause problems if you have a different version of FSPS.  Python-FSPS
-  attempts to check that you have a compatible version of FSPS during
-  installation, and if you do not it will print an error.  This requires that
-  you have `git` and that FSPS be under git version control.  If you do not
-  have the correct version, try::
-  
-      cd $SPS_HOME
-      git pull
-      cd src
-      make clean
-      make all
-   
-  to get and compile the most recent version.  Then try to install python-FSPS again.
+* Stellar Isochrone libraries
 
-* fPIC.  For some compilers (e.g. Intel) it may be necessary to set the
-  ``-fPIC`` flag in the Makefile when compiling FSPS. Please try this if you
-  encounter long python-FSPS installation errors that contain the
-  text ``can not be used when making a shared object; recompile with -fPIC``.
-  For gfortran the flag is not necesary.::
+   - `MIST` (default)
+   - `PADOVA`
+   - `PARSEC`
+   - `BPASS` (in this case the spectral library and SSP parameters cannot be changed)
+   - `BASTI`
+   - `GENEVA`
 
-    cd $SPS_HOME/src
-      
-  edit the ``F90FLAGS=`` line in the Makefile to include ``-fPIC`` and then::
-    
-    make clean
-    make all
+* Stellar spectral libraries
 
-  Then try to install Python-FSPS again.
+   - `MILES` (default)
+   - `BASEL`
 
-* Problems with ``f2py``. The 1.10.x versions of ``numpy`` introduced some
-  compatibility problems in
-  ``f2py``.  These seem to have been fixed in 1.11.x versions and the fixes
-  retroactively added to the 1.10.x versions, but if you encounter long
-  complicated error messages that end with something like ``KeyError: 'void'``,
-  please consider upgrading your ``numpy`` installation.
+* Dust emission libraries
+
+   - `DL07` (default)
+   - `THEMIS`
+
+Changing any of these libraries requires switching off the relevant default,
+which for isochrones is `MIST` and for spectra is `MILES`, and switching on the
+desired library. As an example, you can change to Padova isochrones and the
+BaSeL low resolution synthetic stellar library by re-installing:
+
+.. code-block:: bash
+
+    pip uninstall fsps
+    FFLAGS="-DMIST=0 -DPADOVA=1 -DMILES=0 -DBASEL=1" python -m pip install fsps --no-binary fsps
+
+where the `--no-binary fsps` flag is required to force building from source.
+
+Installing development version
+------------------------------
+
+Python-FSPS is being actively developed on GitHub so you can got there to get
+the most recent development version. You can do this by cloning the `python-fsps
+repository <https://github.com/dfm/python-fsps>`_ and building:
+
+.. code-block:: bash
+
+    git clone --recursive https://github.com/dfm/python-fsps.git
+    cd python-fsps
+    python -m pip install .
+
+Flags can be prepended to change the stellar libraries as described above. This
+repository includes FSPS as a submodule, so if you forget the `--recursive` flag
+above, you can get the submodule by running the following commands in the root
+directory of the Python-FSPS repository:
+
+.. code-block:: bash
+
+    git submodule init
+    git submodule update
+
+If you install Python-FSPS using this method, you don't actually need a separate
+FSPS clone and you can just set the `SPS_HOME` variable as:
+
+.. code-block:: bash
+
+    export SPS_HOME=$(pwd)/src/fsps/libfsps
+
+It is recommended that you install using `pip` even for a local clone. In the
+root directory of the repository, run:
+
+.. code-block:: bash
+
+    python -m pip install .
+
+Starting with version 0.5.0, Python-FSPS no longer supports "development" or
+"editable" builds, but the builds should be cached and re-used if you run `pip
+install` multiple times.
+
+Running the unit tests
+----------------------
+
+The unit tests are implemented in the `tests` subdirectory, and can be executed
+using `nox <https://nox.thea.codes>`_:
+
+.. code-block:: bash
+
+    python -m pip install nox
+    python -m nox
+
+or `pytest <https://docs.pytest.org>`_ directly:
+
+.. code-block:: bash
+
+    python -m pip install ".[test]"
+    python -m pytest -n 2 -v tests/tests.py
+
+where `-n 2` specifies the number of parallel processes to use. The tests can be
+quite slow, but also memory intensive, so it can be useful to run them in
+parallel, but don't overdo it and run out of memory!

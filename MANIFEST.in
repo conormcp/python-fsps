@@ -1,1 +1,0 @@
-include *.rst fsps/fsps.f90 fsps/data/filter_keys.txt
